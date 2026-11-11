@@ -11,10 +11,9 @@ on:
         description: 要做什么（留空则复用 state.json 里的任务）
         required: false
       model:
-        description: 模型别名，见 models.yml
-        type: choice
-        options: [fast, strong, local]
-        default: fast
+        description: 模型别名，见 models.yml；留空 = 按 flow.yml 每个节点的 model 执行
+        type: string
+        default: ''
       runs_on:
         description: 执行机器（self-hosted = 你自己注册的电脑）
         type: choice

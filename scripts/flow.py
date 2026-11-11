@@ -124,7 +124,9 @@ def run_shell(cmd, env_extra=None):
 
 
 def run_agent(node, state):
-    alias, model_env = resolve_model(node.get("model") or state.get("model"))
+    # 本轮显式选择的模型（Issue 表单 / 评论 [model:xxx] / Run workflow）优先于节点写死的 model，
+    # 这样主力模型抽风时可以直接在评论里切到备用别名顶上。
+    alias, model_env = resolve_model(state.get("model") or node.get("model"))
     task = node.get("prompt", "")
     if state.get("feedback"):
         task += "\n\n【上一轮手机验收反馈，最高优先级，必须逐条响应】\n" + state["feedback"]
@@ -210,7 +212,7 @@ img{max-width:260px;border:1px solid #ddd;border-radius:8px}code{background:#f3f
 <h2>节点状态</h2><table><tr><th></th><th>节点</th><th>名称</th><th>状态</th></tr>__ROWS__</table>
 __QR__
 <h2>怎么操作</h2><p style="font-size:14px">在 GitHub App 打开本项目 Issue，回复 <code>通过</code> 继续，或直接写修改意见回退重做；<br>
-想换模型就在评论里带 <code>[model:strong]</code>。<a href="__ISSUE_URL__">打开 Issue →</a></p>
+想换模型就在评论里带 <code>[model:kimi-k3]</code> 这种别名。<a href="__ISSUE_URL__">打开 Issue →</a></p>
 <script>mermaid.initialize({startOnLoad:true,theme:'default'});</script></body></html>"""
     qr = ""
     if (ROOT / "docs" / "preview-qrcode.jpg").exists():
@@ -274,7 +276,7 @@ def main():
     if event == "start":
         if not issue:
             issue = create_issue(task)
-        # 手机表单里的「模型」字段：### 模型\nfast
+        # 手机表单里的「模型」字段：### 模型\ntencent_cloud_ds_1017
         m = re.search(r"###\s*模型\s*\n\s*(\S+)", task)
         chosen = model or (m.group(1) if m else "")
         if chosen and chosen not in load_yaml("models.yml")["models"]:

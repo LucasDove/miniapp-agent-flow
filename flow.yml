@@ -2,6 +2,11 @@
 # 字段：id / title / type(agent|shell|hitl) / model / prompt / run / needs / ask / reject_to / on_approve
 # 规则：节点顺序 = 执行顺序；needs 里写的 id 必须出现在它前面。
 # hitl = 停下来等你手机拍板；回复「通过」继续，写别的就回退重做。
+#
+# 模型分工（别名定义在 models.yml）：
+#   tencent_cloud_ds_1017 = spec 拆解 + code 写代码（默认主力）
+#   kimi-k3               = design 设计
+#   ds_1017_raw           = 备用，主力模型抽风时在评论里带 [model:ds_1017_raw] 临时顶上
 
 name: 小程序业余迭代流
 
@@ -15,15 +20,28 @@ nodes:
       必须包含：要改哪些页面/组件、验收标准（手机上能一眼看出来的）、明确不做什么。
       本节点只出清单，不要写代码实现。
 
+  - id: design
+    title: 设计说明
+    type: agent
+    model: kimi-k3
+    needs: [spec]
+    prompt: |
+      读取 docs/spec.md，为本次改动出一份设计说明，写入 docs/design.md。
+      必须包含：页面结构与层级、视觉规范（配色/字号/字重/间距/圆角，取值贴齐 app.wxss 既有变量）、
+      交互与状态（点击反馈、加载中、空态、错误态）、关键尺寸（可点击区不小于 44px）、
+      与现有页面风格如何保持一致。
+      只出设计说明，不要写代码，也不要改任何源码文件。
+
   - id: code
     title: 写代码
     type: agent
     model: tencent_cloud_ds_1017
-    needs: [spec]
+    needs: [spec, design]
     prompt: |
-      读取 docs/spec.md，实现其中的改动。
+      读取 docs/spec.md 与 docs/design.md，实现其中的改动。
       修改小程序源码（pages/、components/、app.json、app.js、app.wxss 等），
-      保持项目既有的目录结构与代码风格，每个文件输出完整内容。
+      严格按 design.md 的视觉与尺寸规范落地，保持项目既有的目录结构与代码风格，
+      每个文件输出完整内容。
 
   - id: test
     title: 构建检查

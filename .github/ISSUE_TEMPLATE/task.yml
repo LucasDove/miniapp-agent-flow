@@ -15,12 +15,12 @@ body:
     id: model
     attributes:
       label: 模型
-      description: 别名定义在仓库根目录 models.yml
+      description: 选「默认」= 按 flow.yml 分工（spec/code 用 tencent_cloud_ds_1017，design 用 kimi-k3）；指定某一个则本轮所有 agent 节点都用它
       options:
         - 默认
-        - fast
-        - strong
-        - local
+        - tencent_cloud_ds_1017
+        - kimi-k3
+        - ds_1017_raw
       default: 0
     validations:
       required: true

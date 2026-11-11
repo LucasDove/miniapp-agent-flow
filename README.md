@@ -36,13 +36,24 @@ git push -u origin main
 编辑根目录 **`models.yml`**，只改 `base_url` 和 `model` 两处：
 
 ```yaml
-fast:
-  base_url: https://你的服务.example.com/v1     # 必须以 /v1 结尾
-  model: 你的模型ID
-  key_env: LLM_API_KEY
+default: tencent_cloud_ds_1017
+
+models:
+  tencent_cloud_ds_1017:
+    base_url: https://你的服务.example.com/v1     # 必须以 /v1 结尾
+    model: 你的模型ID
+    key_env: LLM_API_KEY
 ```
 
-> 三个别名 `fast / strong / local` 分别给「拆解」「写代码」「本地模型」用，可以在 `flow.yml` 里给每个节点单独指定。
+当前三个别名分工：
+
+| 别名 | 用在哪 | 说明 |
+|---|---|---|
+| `tencent_cloud_ds_1017` | `spec` 需求拆解 + `code` 写代码 | 默认主力 |
+| `kimi-k3` | `design` 设计说明 | 视觉与交互方案 |
+| `ds_1017_raw` | 备用 | 主力不可用时评论里带 `[model:ds_1017_raw]` 顶上 |
+
+> 别名随便叫什么，只要 `flow.yml` 里节点写的 `model:` 和 `models.yml` 的键一致即可。想换第二把 key，就在 workflow 的 `env` 里加一行，然后改 `key_env`。
 
 ### 4. 打开可视化面板（可选但推荐）
 `Settings → Pages → Build and deployment → Source` 选 **GitHub Actions**。
@@ -76,11 +87,11 @@ https://<你的用户名>.github.io/<仓库名>/
 
 | 时机 | 你做什么 |
 |---|---|
-| 通勤/摸鱼 | 手机开 Issue 说要做什么，或直接评论 `[model:strong] 把列表页加下拉刷新` |
+| 通勤/摸鱼 | 手机开 Issue 说要做什么，或直接评论 `[model:kimi-k3] 把列表页加下拉刷新` |
 | 收到通知 | 点开评论看 DAG + 日志，或打开面板网页 |
 | 拍板 | 回复 **`通过`** → 继续往下；**直接写意见**（如「按钮太小，改 44px」）→ 自动回退到写代码节点重做 |
 
-评论里带 `[model:别名]` 可给本轮临时换模型；不写就沿用 `flow.yml` 里节点指定的模型。
+评论里带 `[model:别名]` 可给本轮临时换模型（本轮所有 agent 节点都用它）；不写就按 `flow.yml` 里每个节点的分工走。
 
 **一次只跑一条流**（`concurrency: agent-flow` 已保证排队），别同时开两个任务 Issue。
 
@@ -106,7 +117,7 @@ https://<你的用户名>.github.io/<仓库名>/
   - id: changelog
     title: 生成更新说明
     type: agent
-    model: fast
+    model: tencent_cloud_ds_1017
     needs: [test]
     prompt: 根据本次 git diff 写一段给用户看的更新说明，写入 docs/CHANGELOG.md
 ```
@@ -146,8 +157,8 @@ GitHub 只是跑脚本，不经手推理、不加价。WorkBuddy 完全不在这
 
 **3. 每次换模型**
 
-- 手机 Issue 表单里选 `fast / strong / local`
-- 或评论里带 `[model:strong]`
+- 手机 Issue 表单里选 `tencent_cloud_ds_1017 / kimi-k3 / ds_1017_raw`
+- 或评论里带 `[model:kimi-k3]`
 - 或桌面 `Run workflow` 里下拉选
 - 或 `flow.yml` 里给每个节点写死 `model:`
 
