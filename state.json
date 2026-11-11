@@ -1,7 +1,7 @@
 {
   "issue": 7,
   "task": "### 要做什么\n\n只做连通性冒烟，不改任何业务代码。\n\n要做：\n1. 新建 docs/smoke.md，内容只有一行：smoke ok <UTC 时间>\n2. 不要动 pages/、app.json、app.js、app.wxss 等源码；也不要改 flow.yml / models.yml / state.json / .github/\n\n验收：仓库里出现 docs/smoke.md，只有这一行内容，其他文件零改动。\n\n### 模型\n\n默认",
-  "model": "tencent_cloud_ds_1017",
+  "model": "",
   "active": null,
   "feedback": "",
   "status": {
