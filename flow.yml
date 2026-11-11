@@ -9,7 +9,7 @@ nodes:
   - id: spec
     title: 需求拆解
     type: agent
-    model: fast
+    model: tencent_cloud_ds_1017
     prompt: |
       把用户需求拆成一份可验收的清单，写入 docs/spec.md。
       必须包含：要改哪些页面/组件、验收标准（手机上能一眼看出来的）、明确不做什么。
@@ -18,7 +18,7 @@ nodes:
   - id: code
     title: 写代码
     type: agent
-    model: strong
+    model: tencent_cloud_ds_1017
     needs: [spec]
     prompt: |
       读取 docs/spec.md，实现其中的改动。
