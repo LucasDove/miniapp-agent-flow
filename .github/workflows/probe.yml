@@ -1,0 +1,38 @@
+name: probe
+
+# 手动诊断：用 Secrets 里的真 key 逐字段试探某个模型别名为什么报 400 / 401，
+# 结果直接贴在 job summary 里。不改任何代码、不动 state.json。
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 模型别名（见 models.yml）
+        required: true
+        default: kimi-k3
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 试探请求形状
+        run: python scripts/probe_model.py "${{ inputs.model }}" | tee probe.txt
+      - name: 结论贴到 summary
+        if: always()
+        run: |
+          {
+            echo '## probe 结果'
+            echo ''
+            echo '```'
+            cat probe.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
