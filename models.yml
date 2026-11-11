@@ -13,6 +13,9 @@
 #   ② 按量计费 LKEAP（key 形如 sk-xxx）
 #      base_url: https://api.lkeap.cloud.tencent.com/v1
 #   混用只会得到 401 not_authorized / 401002，报错信息不会告诉你填错了哪一半。
+#
+# 可选字段 temperature：不写 = 0.2。思考类模型（如 kimi-k3）只认 1，
+#   写 0.2 会被 MaaS 侧拒成 400 / 400001「请求不合法」，报错里完全不提 temperature。
 
 default: tencent_cloud_ds_1017
 
@@ -30,10 +33,13 @@ models:
     key_env: LLM_API_KEY
 
   # 设计：design 节点
+  # ⚠️ temperature 是可选项（默认 0.2）。kimi-k3 只接受 1.0：
+  #    实测 0.2 会被 MaaS 侧直接拒成 400 / 400001「请求不合法」，报错完全不提 temperature。
   kimi-k3:
     base_url: https://tokenhub.tencentmaas.com/plan/v3
     model: kimi-k3
     key_env: LLM_API_KEY
+    temperature: 1
 
   # 本地模型（Ollama / LM Studio / vLLM）：只能用 self-hosted runner 跑，
   # 托管 runner 访问不到你机器的 127.0.0.1。不需要 key。

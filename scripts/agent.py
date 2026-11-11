@@ -28,6 +28,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 BASE = os.environ.get("OPENAI_BASE_URL", "").rstrip("/")
 KEY = os.environ.get("OPENAI_API_KEY", "")
 MODEL = os.environ.get("OPENAI_MODEL", "")
+# 不写 = 0.2；写 none/off 则完全不传（个别模型连 temperature 字段都不接受）。
+TEMPERATURE = os.environ.get("OPENAI_TEMPERATURE", "0.2").strip()
 PLAIN = os.environ.get("AGENT_PLAIN", "0") == "1"
 MAX_TURNS = int(os.environ.get("AGENT_MAX_TURNS", "12"))
 ALLOW = [x.strip() for x in os.environ.get(
@@ -79,7 +81,13 @@ def chat(messages, tools=None):
     if not KEY:
         raise RuntimeError("OPENAI_API_KEY 为空：检查 GitHub Secrets 里的 LLM_API_KEY 是否已配置、"
                            "以及 models.yml 里该别名的 key_env 是否写成 LLM_API_KEY")
-    payload = {"model": MODEL, "messages": messages, "temperature": 0.2}
+    payload = {"model": MODEL, "messages": messages}
+    if TEMPERATURE and TEMPERATURE.lower() not in ("none", "off", "-"):
+        try:
+            payload["temperature"] = float(TEMPERATURE)
+        except ValueError:
+            raise RuntimeError(
+                f"OPENAI_TEMPERATURE={TEMPERATURE!r} 不是数字：检查 models.yml 里该别名的 temperature")
     if tools:
         payload["tools"] = tools
         payload["tool_choice"] = "auto"

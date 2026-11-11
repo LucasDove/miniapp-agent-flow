@@ -96,15 +96,16 @@ def main():
             continue
         mid = m.get("model", name)
         mbase = m["base_url"].rstrip("/")
+        temp = m.get("temperature", 0)
         body = {
             "model": mid,
             "messages": [{"role": "user", "content": "只回一个字：ok"}],
             "max_tokens": 16,
-            "temperature": 0,
+            "temperature": temp,
             "stream": False,
         }
         code, payload = call(mbase + "/chat/completions", key, body, "POST")
-        print(f"[{name}]  model={mid}")
+        print(f"[{name}]  model={mid}  temperature={temp}")
         print(f"    {mbase}/chat/completions")
         if code != 200:
             all_ok = False
@@ -115,6 +116,9 @@ def main():
                       "② Secret 里是否多带了换行 ③ key 是否已过期/被重置")
             elif "20033" in msg or "invalid model" in msg.lower():
                 print("    ↳ 模型名不在该套餐清单里，去控制台核对 Model ID（必须全小写）")
+            elif "400001" in msg or "invalid_request" in msg:
+                print(f"    ↳ 请求体被拒。这个模型常常只认特定 temperature（当前 {temp}）。"
+                      "先试：python3 scripts/probe_model.py " + name)
             continue
         print("    ✅ 对话成功")
 

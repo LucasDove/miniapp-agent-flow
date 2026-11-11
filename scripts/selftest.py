@@ -63,7 +63,7 @@ def start_server():
     return srv, port
 
 
-def run_agent(base, plain):
+def run_agent(base, plain, extra=None):
     env = dict(os.environ)
     env.update({
         "OPENAI_BASE_URL": base,
@@ -74,6 +74,7 @@ def run_agent(base, plain):
         "AGENT_PLAIN": "1" if plain else "0",
         "AGENT_MAX_TURNS": "3",
     })
+    env.update(extra or {})
     p = subprocess.run([sys.executable, str(ROOT / "scripts" / "agent.py")],
                        capture_output=True, text=True, cwd=ROOT, env=env, timeout=60)
     return p
@@ -129,6 +130,17 @@ def main():
     check("提示里点明站点不匹配", "tokenhub.tencentmaas.com/plan/v3" in p.stderr, p.stderr[-400:])
     check("提示里写明原始返回", "not_authorized" in p.stderr)
 
+    # 3b) temperature 必须跟着模型别名走（kimi-k3 只认 1，写 0.2 会被 400 拒掉）
+    print("\n[3b] agent.py · temperature 由环境变量决定")
+    RECEIVED.clear()
+    run_agent(base, plain=False, extra={"OPENAI_TEMPERATURE": "1"})
+    check("显式 1 时请求体带 1.0",
+          RECEIVED and RECEIVED[0]["body"].get("temperature") == 1.0, RECEIVED[:1])
+    RECEIVED.clear()
+    run_agent(base, plain=False, extra={"OPENAI_TEMPERATURE": "off"})
+    check("off 时完全不发 temperature",
+          RECEIVED and "temperature" not in RECEIVED[0]["body"], RECEIVED[:1])
+
     # 4) flow.py 纯逻辑
     print("\n[4] flow.py · 调度逻辑")
     os.environ.setdefault("GITHUB_REPOSITORY", "x/y")
@@ -153,6 +165,11 @@ def main():
           alias_node[1]["OPENAI_BASE_URL"] == "https://tokenhub.tencentmaas.com/plan/v3",
           alias_node[1]["OPENAI_BASE_URL"])
     check("key 从 LLM_API_KEY 注入", alias_node[1]["OPENAI_API_KEY"] == "sk-test")
+    # kimi-k3 只认 temperature=1，配错就是 400/400001（真机踩过）
+    check("kimi-k3 的 temperature 是 1", alias_node[1]["OPENAI_TEMPERATURE"] == "1",
+          alias_node[1].get("OPENAI_TEMPERATURE"))
+    check("未配 temperature 的别名回落 0.2",
+          flow.resolve_model("tencent_cloud_ds_1017")[1]["OPENAI_TEMPERATURE"] == "0.2")
 
     # 4b) 失败态下 comment_body 说人话
     st = {"status": {i: ("failed" if i == "spec" else "pending") for i in order}, "issue": 1}

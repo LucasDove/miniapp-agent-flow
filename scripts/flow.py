@@ -107,6 +107,8 @@ def resolve_model(name):
         "OPENAI_BASE_URL": cfg.get("base_url", ""),
         "OPENAI_API_KEY": key,
         "OPENAI_MODEL": cfg.get("model", name),
+        # 不给就用 agent.py 的默认 0.2；kimi-k3 这类思考模型必须在 models.yml 里写 temperature: 1
+        "OPENAI_TEMPERATURE": str(cfg.get("temperature", "0.2")),
     }
 
 
