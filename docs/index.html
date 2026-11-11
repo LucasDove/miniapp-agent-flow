@@ -1,8 +1,31 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>流程面板</title>
-<style>body{font-family:-apple-system,"PingFang SC",sans-serif;max-width:720px;margin:40px auto;padding:0 16px;color:#111}
-code{background:#f3f4f6;padding:2px 6px;border-radius:4px}</style></head><body>
-<h1>流程面板</h1>
-<p>还没有跑过任务。第一次运行后，这个页面会被自动覆盖成可交互的 DAG 状态图。</p>
-<p>在 GitHub App 里用 <code>派一个活</code> 模板开一个 Issue 就能开始。</p>
-</body></html>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>小程序业余迭代流</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#111}
+h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #eee;padding:8px;text-align:left;font-size:14px}
+.card{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin:16px 0}
+img{max-width:260px;border:1px solid #ddd;border-radius:8px}code{background:#f3f4f6;padding:2px 5px;border-radius:4px}</style></head><body>
+<h1>小程序业余迭代流</h1><p style="color:#6b7280;font-size:13px">更新于 2026-11-11 03:49 UTC · 手机直接看这张图，去 GitHub Issue 里回复即可推进</p>
+<pre class="mermaid">flowchart LR
+  spec["需求拆解"]:::failed
+  design["设计说明"]:::pending
+  code["写代码"]:::pending
+  test["构建检查"]:::pending
+  review{"手机验收"}:::pending
+  spec --> design
+  spec --> code
+  design --> code
+  code --> test
+  test --> review
+  classDef done fill:#d1fae5,stroke:#059669,color:#065f46;
+  classDef waiting fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#92400e;
+  classDef running fill:#dbeafe,stroke:#2563eb,color:#1e40af;
+  classDef pending fill:#f3f4f6,stroke:#9ca3af,color:#6b7280;
+  classDef failed fill:#fee2e2,stroke:#dc2626,color:#991b1b;</pre>
+<div class="card"><b>现在等你：</b> 流程已走完 ✅</div>
+<h2>节点状态</h2><table><tr><th></th><th>节点</th><th>名称</th><th>状态</th></tr><tr><td>❌</td><td><code>spec</code></td><td>需求拆解</td><td>failed</td></tr><tr><td>⚪</td><td><code>design</code></td><td>设计说明</td><td>pending</td></tr><tr><td>⚪</td><td><code>code</code></td><td>写代码</td><td>pending</td></tr><tr><td>⚪</td><td><code>test</code></td><td>构建检查</td><td>pending</td></tr><tr><td>⚪</td><td><code>review</code></td><td>手机验收</td><td>pending</td></tr></table>
+
+<h2>怎么操作</h2><p style="font-size:14px">在 GitHub App 打开本项目 Issue，回复 <code>通过</code> 继续，或直接写修改意见回退重做；<br>
+想换模型就在评论里带 <code>[model:kimi-k3]</code> 这种别名。<a href="https://github.com/LucasDove/miniapp-agent-flow/issues/5">打开 Issue →</a></p>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script></body></html>

@@ -1,10 +1,29 @@
 {
-  "issue": 0,
+  "issue": 5,
   "task": "",
   "model": "",
   "active": null,
   "feedback": "",
-  "status": {},
-  "history": [],
-  "updated": ""
+  "status": {
+    "spec": "failed",
+    "design": "pending",
+    "code": "pending",
+    "test": "pending",
+    "review": "pending"
+  },
+  "history": [
+    {
+      "at": "2026-11-11 03:49 UTC",
+      "event": "start",
+      "node": "",
+      "text": ""
+    },
+    {
+      "at": "2026-11-11 03:49 UTC",
+      "event": "node",
+      "node": "spec",
+      "ok": false
+    }
+  ],
+  "updated": "2026-11-11 03:49 UTC"
 }
