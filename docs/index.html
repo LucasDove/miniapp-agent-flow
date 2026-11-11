@@ -6,13 +6,13 @@
 h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #eee;padding:8px;text-align:left;font-size:14px}
 .card{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin:16px 0}
 img{max-width:260px;border:1px solid #ddd;border-radius:8px}code{background:#f3f4f6;padding:2px 5px;border-radius:4px}</style></head><body>
-<h1>小程序业余迭代流</h1><p style="color:#6b7280;font-size:13px">更新于 2026-11-11 04:16 UTC · 手机直接看这张图，去 GitHub Issue 里回复即可推进</p>
+<h1>小程序业余迭代流</h1><p style="color:#6b7280;font-size:13px">更新于 2026-11-11 04:20 UTC · 手机直接看这张图，去 GitHub Issue 里回复即可推进</p>
 <pre class="mermaid">flowchart LR
   spec["需求拆解"]:::done
-  design["设计说明"]:::failed
-  code["写代码"]:::pending
-  test["构建检查"]:::pending
-  review{"手机验收"}:::pending
+  design["设计说明"]:::done
+  code["写代码"]:::done
+  test["构建检查"]:::done
+  review{"手机验收"}:::waiting
   spec --> design
   spec --> code
   design --> code
@@ -23,8 +23,10 @@ img{max-width:260px;border:1px solid #ddd;border-radius:8px}code{background:#f3f
   classDef running fill:#dbeafe,stroke:#2563eb,color:#1e40af;
   classDef pending fill:#f3f4f6,stroke:#9ca3af,color:#6b7280;
   classDef failed fill:#fee2e2,stroke:#dc2626,color:#991b1b;</pre>
-<div class="card"><b>现在等你：</b> <b style='color:#b91c1c'>节点 design（设计说明）失败了</b>，流程停在出错处。看下面日志的最后一段，修好后在 Issue 里回复「继续」，我会从出错节点重跑。</div>
-<h2>节点状态</h2><table><tr><th></th><th>节点</th><th>名称</th><th>状态</th></tr><tr><td>✅</td><td><code>spec</code></td><td>需求拆解</td><td>done</td></tr><tr><td>❌</td><td><code>design</code></td><td>设计说明</td><td>failed</td></tr><tr><td>⚪</td><td><code>code</code></td><td>写代码</td><td>pending</td></tr><tr><td>⚪</td><td><code>test</code></td><td>构建检查</td><td>pending</td></tr><tr><td>⚪</td><td><code>review</code></td><td>手机验收</td><td>pending</td></tr></table>
+<div class="card"><b>现在等你：</b> 代码和构建结果已就绪，看面板上的 DAG 和本轮日志。
+回复「通过」→ 继续往下；直接写修改意见（例：按钮太小，改成 44px）→ 回到写代码节点重做。
+</div>
+<h2>节点状态</h2><table><tr><th></th><th>节点</th><th>名称</th><th>状态</th></tr><tr><td>✅</td><td><code>spec</code></td><td>需求拆解</td><td>done</td></tr><tr><td>✅</td><td><code>design</code></td><td>设计说明</td><td>done</td></tr><tr><td>✅</td><td><code>code</code></td><td>写代码</td><td>done</td></tr><tr><td>✅</td><td><code>test</code></td><td>构建检查</td><td>done</td></tr><tr><td>⏳</td><td><code>review</code></td><td>手机验收</td><td>waiting</td></tr></table>
 
 <h2>怎么操作</h2><p style="font-size:14px">在 GitHub App 打开本项目 Issue，回复 <code>通过</code> 继续，或直接写修改意见回退重做；<br>
 想换模型就在评论里带 <code>[model:kimi-k3]</code> 这种别名。<a href="https://github.com/LucasDove/miniapp-agent-flow/issues/7">打开 Issue →</a></p>

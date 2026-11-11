@@ -1,15 +1,15 @@
 {
   "issue": 7,
   "task": "### 要做什么\n\n只做连通性冒烟，不改任何业务代码。\n\n要做：\n1. 新建 docs/smoke.md，内容只有一行：smoke ok <UTC 时间>\n2. 不要动 pages/、app.json、app.js、app.wxss 等源码；也不要改 flow.yml / models.yml / state.json / .github/\n\n验收：仓库里出现 docs/smoke.md，只有这一行内容，其他文件零改动。\n\n### 模型\n\n默认",
-  "model": "",
-  "active": null,
+  "model": "tencent_cloud_ds_1017",
+  "active": "review",
   "feedback": "",
   "status": {
     "spec": "done",
-    "design": "failed",
-    "code": "pending",
-    "test": "pending",
-    "review": "pending"
+    "design": "done",
+    "code": "done",
+    "test": "done",
+    "review": "waiting"
   },
   "history": [
     {
@@ -29,7 +29,31 @@
       "event": "node",
       "node": "design",
       "ok": false
+    },
+    {
+      "at": "2026-11-11 04:19 UTC",
+      "event": "retry",
+      "node": "design",
+      "text": "继续"
+    },
+    {
+      "at": "2026-11-11 04:19 UTC",
+      "event": "node",
+      "node": "design",
+      "ok": true
+    },
+    {
+      "at": "2026-11-11 04:20 UTC",
+      "event": "node",
+      "node": "code",
+      "ok": true
+    },
+    {
+      "at": "2026-11-11 04:20 UTC",
+      "event": "node",
+      "node": "test",
+      "ok": true
     }
   ],
-  "updated": "2026-11-11 04:16 UTC"
+  "updated": "2026-11-11 04:20 UTC"
 }
