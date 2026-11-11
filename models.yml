@@ -6,17 +6,17 @@ default: tencent_cloud_ds_1017
 
 models:
   tencent_cloud_ds_1017:
-    base_url: https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions
+    base_url: https://api.lkeap.cloud.tencent.com/v1
     model: deepseek-v4.1-flash-1017
     key_env: LLM_API_KEY
 
   ds_1017_raw:
-    base_url: https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions
+    base_url: https://api.lkeap.cloud.tencent.com/v1
     model: deepseek/deepseek-flash
     key_env: LLM_API_KEY
 
   kimi-k3:
-    base_url: https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions
+    base_url: https://api.lkeap.cloud.tencent.com/v1
     model: kimi-k3
     key_env: LLM_API_KEY
 
