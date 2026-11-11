@@ -1,0 +1,23 @@
+# ★ 把 base_url / model 改成你自己的 OpenAI 兼容 API，只改这里。
+# key_env 指向 GitHub Actions 里的环境变量名（在 workflow 的 env 段注入 Secret）。
+# 想再加一把不同的 key：在 workflow 的 env 里加一行，这里把 key_env 改成那个名字。
+
+default: fast
+
+models:
+  fast:
+    base_url: https://your-api.example.com/v1
+    model: my-fast-model
+    key_env: LLM_API_KEY
+
+  strong:
+    base_url: https://your-api.example.com/v1
+    model: my-strong-model
+    key_env: LLM_API_KEY
+
+  # 本地模型（Ollama / LM Studio / vLLM）：只能用 self-hosted runner 跑，
+  # 托管 runner 访问不到你机器的 127.0.0.1。不需要 key。
+  local:
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen2.5-coder:7b
+    key_env: ""

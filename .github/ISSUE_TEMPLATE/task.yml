@@ -1,0 +1,26 @@
+name: 派一个活
+description: 手机上一句话提需求，DAG 自动跑起来，跑完在下面回复验收
+title: "[任务] "
+labels: []
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: 要做什么
+      description: 写清改动点和验收标准，越具体返工越少
+      placeholder: 把「我的」页头像改成圆形，加一个 44px 的最小点击区，不要动其他页面
+    validations:
+      required: true
+  - type: dropdown
+    id: model
+    attributes:
+      label: 模型
+      description: 别名定义在仓库根目录 models.yml
+      options:
+        - 默认
+        - fast
+        - strong
+        - local
+      default: 0
+    validations:
+      required: true

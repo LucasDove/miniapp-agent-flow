@@ -1,0 +1,63 @@
+# ★ 这是你唯一需要长期维护的文件：按执行顺序从上往下写，needs 只决定图上连线。
+# 字段：id / title / type(agent|shell|hitl) / model / prompt / run / needs / ask / reject_to / on_approve
+# 规则：节点顺序 = 执行顺序；needs 里写的 id 必须出现在它前面。
+# hitl = 停下来等你手机拍板；回复「通过」继续，写别的就回退重做。
+
+name: 小程序业余迭代流
+
+nodes:
+  - id: spec
+    title: 需求拆解
+    type: agent
+    model: fast
+    prompt: |
+      把用户需求拆成一份可验收的清单，写入 docs/spec.md。
+      必须包含：要改哪些页面/组件、验收标准（手机上能一眼看出来的）、明确不做什么。
+      本节点只出清单，不要写代码实现。
+
+  - id: code
+    title: 写代码
+    type: agent
+    model: strong
+    needs: [spec]
+    prompt: |
+      读取 docs/spec.md，实现其中的改动。
+      修改小程序源码（pages/、components/、app.json、app.js、app.wxss 等），
+      保持项目既有的目录结构与代码风格，每个文件输出完整内容。
+
+  - id: test
+    title: 构建检查
+    type: shell
+    needs: [code]
+    run: |
+      if [ -f package.json ]; then
+        npm install --no-audit --no-fund
+        npm run build --if-present
+        npm run lint --if-present
+      else
+        echo "原生小程序项目，无 package.json，跳过构建"
+      fi
+
+  - id: review
+    title: 手机验收
+    type: hitl
+    needs: [test]
+    reject_to: code          # 写修改意见时回退到哪个节点重做
+    ask: |
+      代码和构建结果已就绪，看面板上的 DAG 和本轮日志。
+      回复「通过」→ 继续往下；直接写修改意见（例：按钮太小，改成 44px）→ 回到写代码节点重做。
+
+  # ↓↓↓ 小程序专用：配好 WECHAT_APPID / WECHAT_PRIVATE_KEY 两个 Secrets 后，
+  #     把下面整段取消注释即可获得「手机扫码验收 + 一句话上传体验版」。
+  # - id: preview
+  #   title: 出体验二维码
+  #   type: shell
+  #   needs: [review]
+  #   run: npm install --no-save miniprogram-ci && node scripts/preview.js
+  #
+  # - id: ship
+  #   title: 上传体验版
+  #   type: hitl
+  #   needs: [preview]
+  #   ask: 扫面板上的二维码确认真机效果，回复「通过」即上传体验版。
+  #   on_approve: npm install --no-save miniprogram-ci && node scripts/upload.js

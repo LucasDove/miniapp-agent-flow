@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.key
+.env
+node_modules/
+.DS_Store
+npm-debug.log*

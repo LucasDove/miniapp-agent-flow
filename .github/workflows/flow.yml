@@ -1,0 +1,97 @@
+name: flow
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 要做什么（留空则复用 state.json 里的任务）
+        required: false
+      model:
+        description: 模型别名，见 models.yml
+        type: choice
+        options: [fast, strong, local]
+        default: fast
+      runs_on:
+        description: 执行机器（self-hosted = 你自己注册的电脑）
+        type: choice
+        options: [ubuntu-latest, self-hosted]
+        default: ubuntu-latest
+      issue_number:
+        description: 挂到哪个 Issue（留空自动新建）
+        required: false
+
+permissions:
+  contents: write
+  issues: write
+
+# 一次只跑一条流，避免两条评论同时改 state.json
+concurrency:
+  group: agent-flow
+  cancel-in-progress: false
+
+jobs:
+  run:
+    # 机器人自己发的 Issue / 评论不能再触发，否则无限循环
+    if: >
+      (github.event_name != 'issue_comment' ||
+        (github.event.comment.user.login != 'github-actions[bot]' &&
+         !contains(github.event.comment.body, '<!-- flow-bot -->'))) &&
+      (github.event_name != 'issues' ||
+        !contains(github.event.issue.body, '<!-- flow-bot -->'))
+    runs-on: ${{ inputs.runs_on || 'ubuntu-latest' }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+      WECHAT_PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}
+      AGENT_PLAIN: ${{ vars.AGENT_PLAIN || '0' }}
+      FLOW_EVENT: ${{ github.event_name == 'issue_comment' && 'comment' || 'start' }}
+      FLOW_ISSUE: ${{ github.event.issue.number || inputs.issue_number || 0 }}
+      FLOW_COMMENT: ${{ github.event.comment.body }}
+      FLOW_TASK: ${{ inputs.task || github.event.issue.body || '' }}
+      FLOW_MODEL: ${{ inputs.model || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: pip install -r requirements.txt
+      - name: 推进 DAG
+        run: python scripts/flow.py
+      - name: 提交状态与产物
+        run: |
+          git config user.name "flow-bot"
+          git config user.email "flow-bot@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo "无改动"; else
+            git commit -m "flow: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
+      # 面板单独部署：GITHUB_TOKEN 的 push 不会触发「从分支发布」的 Pages 构建，
+      # 所以这里走 artifact 部署，发布源必须选 GitHub Actions。
+      - name: 上传面板产物
+        if: ${{ vars.ENABLE_PAGES == '1' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  pages:
+    needs: run
+    if: ${{ vars.ENABLE_PAGES == '1' && success() }}
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
