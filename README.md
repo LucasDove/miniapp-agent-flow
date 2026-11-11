@@ -33,27 +33,36 @@ git push -u origin main
 （可选）`Settings → Secrets and variables → Actions → Variables` 里加 `AGENT_PLAIN=1`，仅当你的模型**不支持 function calling** 时。
 
 ### 3. 把模型改成你自己的
-编辑根目录 **`models.yml`**，只改 `base_url` 和 `model` 两处：
+编辑根目录 **`models.yml`**。腾讯云有**两套互不通用的端点**，`base_url` 和 key 必须配套，混用一定 401：
+
+| 体系 | key 形状 | base_url |
+|---|---|---|
+| Token Plan 套餐（包月） | `sk-tp-xxx` | `https://tokenhub.tencentmaas.com/plan/v3` |
+| 按量计费 LKEAP | `sk-xxx` | `https://api.lkeap.cloud.tencent.com/v1` |
 
 ```yaml
 default: tencent_cloud_ds_1017
 
 models:
   tencent_cloud_ds_1017:
-    base_url: https://你的服务.example.com/v1     # 必须以 /v1 结尾
-    model: 你的模型ID
+    base_url: https://tokenhub.tencentmaas.com/plan/v3
+    model: deepseek-v4.1-flash-1017
     key_env: LLM_API_KEY
 ```
 
+> 注意 `base_url` 填的是**站点根**，脚本会自动拼 `/chat/completions`。不要把完整 URL 粘进来，也不要把 `api.lkeap.cloud.tencent.com`（旧域名）和 `/plan/v3`（新路径）拼在一起。
+
 当前三个别名分工：
 
-| 别名 | 用在哪 | 说明 |
+| 别名 | 用在哪 | Model ID |
 |---|---|---|
-| `tencent_cloud_ds_1017` | `spec` 需求拆解 + `code` 写代码 | 默认主力 |
-| `kimi-k3` | `design` 设计说明 | 视觉与交互方案 |
-| `ds_1017_raw` | 备用 | 主力不可用时评论里带 `[model:ds_1017_raw]` 顶上 |
+| `tencent_cloud_ds_1017` | `spec` 需求拆解 + `code` 写代码 | `deepseek-v4.1-flash-1017` |
+| `kimi-k3` | `design` 设计说明 | `kimi-k3` |
+| `ds_1017_raw` | 备用 | `deepseek/deepseek-flash` |
 
-> 别名随便叫什么，只要 `flow.yml` 里节点写的 `model:` 和 `models.yml` 的键一致即可。想换第二把 key，就在 workflow 的 `env` 里加一行，然后改 `key_env`。
+> 别名随便叫，只要 `flow.yml` 里节点写的 `model:` 和 `models.yml` 的键一致即可。想换第二把 key，就在 workflow 的 `env` 里加一行，然后改 `key_env`。
+>
+> ⚠️ Token Plan 条款明确**禁止 API 调用**，仅限在 AI 工具里交互式使用。把套餐 key 用在 GitHub Actions 这种自动化场景，属于条款灰区，可能被限流或封 key。想长期稳定跑，建议改用按量计费的 LKEAP key。
 
 ### 4. 打开可视化面板（可选但推荐）
 `Settings → Pages → Build and deployment → Source` 选 **GitHub Actions**。
@@ -178,12 +187,23 @@ Taro / uni-app 项目请把 `scripts/preview.js`、`scripts/upload.js` 里的 `p
 
 ## 六、排错速查
 
+先跑一遍诊断脚本，它会把 key、模型名、function calling 三件事一次问清：
+
+```bash
+LLM_API_KEY=sk-你的key python3 scripts/check_model.py
+```
+
 | 现象 | 原因 / 动作 |
 |---|---|
 | Actions 没触发 | 检查 workflow 的 `if` 过滤；用 `GITHUB_TOKEN` 发的评论/Issue 不会再触发（防循环，正常） |
-| `HTTP 401/404` | base_url 少 `/v1`、模型 ID 拼错、key 没配或配到了别的 Secret 名 |
+| **`401 not_authorized`** | **`base_url` 与 key 不是同一站点**。`sk-tp-` 开头的套餐 key 只能配 `tokenhub.tencentmaas.com/plan/v3`；`sk-` 开头的按量 key 只能配 `api.lkeap.cloud.tencent.com/v1`。最容易踩的是「旧域名 + 新路径」拼在一起 |
+| **`401002` API Key 不存在或签名校验失败** | 已经是 TokenHub 的鉴权层，说明域名对了但 key 本身有问题：过期、被重置、或多带了换行 |
+| `20033 invalid model` | 模型名不在当前套餐清单里，去控制台核对 Model ID（**必须全小写**） |
+| `HTTP 403` | key 有效但没开通该模型权限 → 控制台授权 |
 | `HTTP 400 ... tools` | 模型不支持 function calling → 在 Variables 加 `AGENT_PLAIN=1`，或给该节点加 `plain: true` |
+| `HTTP 429` | 限流或额度用尽 → 等一会儿，或评论带 `[model:ds_1017_raw]` 换备用模型 |
 | 模型听不懂、乱改文件 | 必须支持 tool calling；`AGENT_PLAIN=1` 是降级方案，效果弱一些 |
+| 节点失败后不知道怎么办 | 直接在 Issue 里随便回一句话（如「重试」）即可从失败节点重跑；回 `/stop` 结束本轮 |
 | Mermaid 图不显示 | 等几秒；确认评论里是 ` ```mermaid ` 代码块；Pages 面板需能访问 jsdelivr CDN |
 | 面板网页一直是旧图 | Pages 的 Source 必须选 **GitHub Actions**（不是「从分支发布」），且 Variables 里有 `ENABLE_PAGES=1`；看 Actions 里的 `pages` job 是否成功 |
 | 评论后没反应 | 只有**黄色 waiting 节点**才吃评论；或机器人自己的评论被过滤了（正常） |
@@ -214,6 +234,7 @@ Taro / uni-app 项目请把 `scripts/preview.js`、`scripts/upload.js` 里的 `p
 | `.github/workflows/flow.yml` | 一次配好：触发、机器选择、Secrets 注入 |
 | `scripts/flow.py` | 调度引擎（推进 DAG / 渲染 / 贴评论） |
 | `scripts/agent.py` | 零依赖 OpenAI 兼容 agent loop |
+| `scripts/check_model.py` | 模型连通性诊断（key / 模型名 / tools 一次测完） |
 | `scripts/preview.js` `upload.js` | 小程序二维码与上传 |
 | `state.json` | 机器人自动维护，**别手改** |
 | `docs/index.html` | 机器人自动重绘的手机面板 |

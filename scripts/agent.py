@@ -44,7 +44,21 @@ def log(msg):
     print("[agent]", str(msg)[:300], file=sys.stderr)
 
 
+HINTS = {
+    401: "鉴权失败。最常见的原因是 base_url 与 key 不属于同一站点：\n"
+         "  · Token Plan 套餐（key 形如 sk-tp-xxx）→ base_url 必须是 https://tokenhub.tencentmaas.com/plan/v3\n"
+         "  · 按量计费 LKEAP（key 形如 sk-xxx）→ base_url 必须是 https://api.lkeap.cloud.tencent.com/v1\n"
+         "  其次是 Secret 里多带了换行/空格，或 key 已过期被重置。本地跑 scripts/check_model.py 可一次定位。",
+    403: "key 有效但没这个模型的权限，去控制台给这个 key 开通对应模型。",
+    404: "模型名或路径不对：确认 base_url 是站点根（Token Plan 到 /plan/v3、LKEAP 到 /v1），model 字段拼写与平台一致。",
+    429: "限流或额度用尽，等一会儿再试，或在评论里带 [model:别名] 换成备用模型。",
+}
+
+
 def chat(messages, tools=None):
+    if not KEY:
+        raise RuntimeError("OPENAI_API_KEY 为空：检查 GitHub Secrets 里的 LLM_API_KEY 是否已配置、"
+                           "以及 models.yml 里该别名的 key_env 是否写成 LLM_API_KEY")
     payload = {"model": MODEL, "messages": messages, "temperature": 0.2}
     if tools:
         payload["tools"] = tools
@@ -60,7 +74,8 @@ def chat(messages, tools=None):
             return json.load(r)["choices"][0]["message"]
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")[:800]
-        raise RuntimeError(f"HTTP {e.code}：{body}（检查 base_url /v1、key、模型名、是否支持 tools）") from e
+        hint = HINTS.get(e.code, "检查 base_url /v1、key、模型名、是否支持 tools")
+        raise RuntimeError(f"HTTP {e.code}（model={MODEL}）→ {hint}\n原始返回：{body}") from e
 
 
 def safe_path(p):

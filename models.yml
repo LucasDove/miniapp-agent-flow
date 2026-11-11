@@ -6,25 +6,32 @@
 #   tencent_cloud_ds_1017 → spec 需求拆解 + code 写代码
 #   kimi-k3               → design 设计
 #   ds_1017_raw           → 备用（主力模型不可用时临时顶）
+#
+# ⚠️ 端点和 key 必须配套，两套体系互不通用：
+#   ① Token Plan 套餐（key 形如 sk-tp-xxx）
+#      base_url: https://tokenhub.tencentmaas.com/plan/v3
+#   ② 按量计费 LKEAP（key 形如 sk-xxx）
+#      base_url: https://api.lkeap.cloud.tencent.com/v1
+#   混用只会得到 401 not_authorized / 401002，报错信息不会告诉你填错了哪一半。
 
 default: tencent_cloud_ds_1017
 
 models:
   # 主力：spec / code
   tencent_cloud_ds_1017:
-    base_url: https://api.lkeap.cloud.tencent.com/v1
+    base_url: https://tokenhub.tencentmaas.com/plan/v3
     model: deepseek-v4.1-flash-1017
     key_env: LLM_API_KEY
 
   # 备用：主力抽风时在评论里带 [model:ds_1017_raw] 临时顶上
   ds_1017_raw:
-    base_url: https://api.lkeap.cloud.tencent.com/v1
+    base_url: https://tokenhub.tencentmaas.com/plan/v3
     model: deepseek/deepseek-flash
     key_env: LLM_API_KEY
 
   # 设计：design 节点
   kimi-k3:
-    base_url: https://api.lkeap.cloud.tencent.com/v1
+    base_url: https://tokenhub.tencentmaas.com/plan/v3
     model: kimi-k3
     key_env: LLM_API_KEY
 

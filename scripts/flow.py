@@ -194,10 +194,16 @@ def render_page(flow, state, page_url):
     rows = []
     for n in flow["nodes"]:
         st = state["status"].get(n["id"], "pending")
-        icon = {"done": "✅", "waiting": "⏳", "running": "🔵", "pending": "⚪", "failed": "❌"}[st]
+        icon = {"done": "✅", "waiting": "⏳", "running": "🔵", "pending": "⚪", "failed": "❌"}.get(st, "⚪")
         rows.append(f"<tr><td>{icon}</td><td><code>{n['id']}</code></td><td>{n.get('title','')}</td><td>{st}</td></tr>")
     waiting = next((n for n in flow["nodes"] if state["status"].get(n["id"]) == "waiting"), None)
-    ask = waiting.get("ask", "结果可以吗？回复「通过」或写修改意见") if waiting else "流程已走完 ✅"
+    failed = next((n for n in flow["nodes"] if state["status"].get(n["id"]) == "failed"), None)
+    if waiting:
+        ask = waiting.get("ask", "结果可以吗？回复「通过」或写修改意见")
+    elif failed:
+        ask = f"<b style='color:#b91c1c'>节点 {failed['id']}（{failed.get('title','')}）失败了</b>，流程停在出错处。看下面日志的最后一段，修好后在 Issue 里回复「继续」，我会从出错节点重跑。"
+    else:
+        ask = "流程已走完 ✅"
     html = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>__TITLE__</title>
@@ -235,7 +241,8 @@ def comment_body(flow, state, logs, page_url):
     if waiting:
         head = f"## ⏳ 现在等你验收：{waiting.get('title', waiting['id'])}\n\n{waiting.get('ask','结果可以吗？回复「通过」或写修改意见')}"
     elif "failed" in state["status"].values():
-        head = "## ❌ 有节点失败，流程已停在出错处\n\n写一句修改意见，我会从出错节点重跑。"
+        bad = next((n['id'] for n in flow["nodes"] if state["status"].get(n['id']) == "failed"), "")
+        head = f"## ❌ 节点 `{bad}` 失败，流程停在出错处\n\n看日志最后一段的报错。修好后**在这条 Issue 里回一句话**（比如「重试」），我会从这个节点重跑；带 `[model:ds_1017_raw]` 可以顺便换成备用模型。"
     else:
         head = "## ✅ 本轮流程全部走完"
     log_block = "\n\n".join(logs) if logs else "（本轮无新执行日志）"
@@ -296,39 +303,56 @@ def main():
             print("state.json 为空或缺少 issue 号，请先在 GitHub 上开一个任务 Issue", file=sys.stderr)
             return 0
         active = state.get("active")
-        if not active or state["status"].get(active) != "waiting":
+        failed = next((i for i in order if state["status"].get(i) == "failed"), None)
+
+        # 有节点失败时：任何一条评论都当作「修好了，重跑」，并从失败节点开始
+        if failed:
+            if "/stop" in (comment or "").lower():
+                post_comment(issue, "已停止本轮。想重新开始时开一个新 Issue。")
+                return 0
+            mt = MODEL_TAG.search(comment or "")
+            if mt:
+                state["model"] = mt.group(1)
+                comment = MODEL_TAG.sub("", comment).strip()
+            state["feedback"] = "" if APPROVE.match(comment or "") else (comment or "")
+            for i in order[order.index(failed):]:
+                state["status"][i] = "pending"
+            state["active"] = None
+            state["history"].append({"at": now(), "event": "retry", "node": failed, "text": (comment or "")[:300]})
+            logs.append(f"🔁 从失败节点 `{failed}` 重跑。")
+        elif not active or state["status"].get(active) != "waiting":
             post_comment(issue, "ℹ️ 当前没有等您拍板的节点，先看看面板上的进度就好。")
             return 0
-
-        mt = MODEL_TAG.search(comment)
-        if mt:
-            state["model"] = mt.group(1)
-            comment = MODEL_TAG.sub("", comment).strip()
-        node = nodes[active]
-        if APPROVE.match(comment or ""):
-            if node.get("on_approve"):
-                ok, out = run_shell(node["on_approve"])
-                logs.append(f"### {active} · 通过后动作\n```\n{out[-2000:]}\n```")
-                if not ok:
-                    state["status"][active] = "failed"
-                    save_state(state)
-                    render_page(flow, state, page_url)
-                    post_comment(issue, "❌ 通过后动作执行失败，写一句意见可重跑。")
-                    return 0
-            state["status"][active] = "done"
-            state["feedback"] = ""
-            state["history"].append({"at": now(), "event": "approve", "node": active, "text": comment})
         else:
-            state["feedback"] = comment
-            target = node.get("reject_to") or next(
-                (i for i in reversed(order[: order.index(active)]) if nodes[i].get("type") == "agent"),
-                order[0],
-            )
-            for i in order[order.index(target):]:
-                state["status"][i] = "pending"
-            state["history"].append({"at": now(), "event": "feedback", "node": active, "text": comment[:300]})
-            logs.append(f"↩️ 收到反馈，回退到 `{target}` 重做。")
-        state["active"] = None
+            mt = MODEL_TAG.search(comment or "")
+            if mt:
+                state["model"] = mt.group(1)
+                comment = MODEL_TAG.sub("", comment).strip()
+            node = nodes[active]
+            if APPROVE.match(comment or ""):
+                if node.get("on_approve"):
+                    ok, out = run_shell(node["on_approve"])
+                    logs.append(f"### {active} · 通过后动作\n```\n{out[-2000:]}\n```")
+                    if not ok:
+                        state["status"][active] = "failed"
+                        save_state(state)
+                        render_page(flow, state, page_url)
+                        post_comment(issue, "❌ 通过后动作执行失败，写一句意见可重跑。")
+                        return 0
+                state["status"][active] = "done"
+                state["feedback"] = ""
+                state["history"].append({"at": now(), "event": "approve", "node": active, "text": comment})
+            else:
+                state["feedback"] = comment
+                target = node.get("reject_to") or next(
+                    (i for i in reversed(order[: order.index(active)]) if nodes[i].get("type") == "agent"),
+                    order[0],
+                )
+                for i in order[order.index(target):]:
+                    state["status"][i] = "pending"
+                state["history"].append({"at": now(), "event": "feedback", "node": active, "text": comment[:300]})
+                logs.append(f"↩️ 收到反馈，回退到 `{target}` 重做。")
+            state["active"] = None
 
     while True:
         nid = next((i for i in order if state["status"][i] == "pending"), None)
