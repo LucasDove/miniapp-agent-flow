@@ -2,17 +2,22 @@
 # key_env 指向 GitHub Actions 里的环境变量名（在 workflow 的 env 段注入 Secret）。
 # 想再加一把不同的 key：在 workflow 的 env 里加一行，这里把 key_env 改成那个名字。
 
-default: fast
+default: tencent_cloud_ds_1017
 
 models:
-  fast:
-    base_url: https://your-api.example.com/v1
-    model: my-fast-model
+  tencent_cloud_ds_1017:
+    base_url: https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions
+    model: deepseek-v4.1-flash-1017
     key_env: LLM_API_KEY
 
-  strong:
-    base_url: https://your-api.example.com/v1
-    model: my-strong-model
+  ds_1017_raw:
+    base_url: https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions
+    model: deepseek/deepseek-flash
+    key_env: LLM_API_KEY
+
+  kimi-k3:
+    base_url: https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions
+    model: kimi-k3
     key_env: LLM_API_KEY
 
   # 本地模型（Ollama / LM Studio / vLLM）：只能用 self-hosted runner 跑，
