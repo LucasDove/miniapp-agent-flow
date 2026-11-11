@@ -266,6 +266,30 @@ def comment_body(flow, state, logs, page_url):
 回复 **通过** 继续；直接写修改意见则回退重做；评论里带 `[model:别名]` 可换模型。"""
 
 
+def head_info():
+    """本次实际运行的是哪个 commit。
+
+    点「Re-run」会原封不动重放旧 commit —— 这是「models.yml / flow.yml 改了却没生效」
+    最常见的原因，把它写进 Issue 日志，一眼就能看出来。
+    """
+    sha = os.environ.get("GITHUB_SHA", "")
+    try:
+        out = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+                             capture_output=True, text=True).stdout.strip()
+        sha = out or sha
+    except Exception:
+        pass
+    msg = f"🔖 本次运行 commit `{sha or '未知'}`"
+    try:
+        latest = api("GET", f"/repos/{REPO}/commits/main")["sha"][:7]
+    except Exception:
+        return msg
+    if latest and sha and latest != sha:
+        msg += (f"，但 main 最新是 `{latest}` —— **这次跑的是旧代码**。"
+                "改了 models.yml/flow.yml 没生效就是这个原因：别点 Re-run，要重新 Run workflow（选 main）。")
+    return msg
+
+
 def main():
     flow = load_yaml("flow.yml")
     order = validate(flow)
@@ -279,6 +303,10 @@ def main():
 
     state = load_state()
     logs = []
+    try:
+        logs.append(head_info())
+    except Exception:
+        pass
 
     if event == "start":
         if not issue:

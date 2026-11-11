@@ -55,6 +55,26 @@ HINTS = {
 }
 
 
+def diagnose_401(body, base):
+    """401 的两种返回体是不同站点的指纹，据此判断是「站点配错」还是「key 本身有问题」。
+
+    LKEAP        → {"error":{"code":"not_authorized","type":"not_authorized_error"}}
+    Token Plan   → {"error":{"code":"401002","type":"authentication_error"}}
+    """
+    where = base or "(未设置 OPENAI_BASE_URL)"
+    if "not_authorized" in body:
+        return (f"按量计费 LKEAP 返回的 not_authorized，意思是它不认识这把 key（请求实际打到了 {where}）。\n"
+                "  · key 是 sk-tp- 开头 → 那是 Token Plan 的 key，base_url 必须改成 "
+                "https://tokenhub.tencentmaas.com/plan/v3\n"
+                "  · key 是 sk-xxx 但确实属于 LKEAP → 多半是没开通该模型、没加白名单，或 key 已被重置。")
+    if "401002" in body or "authentication_error" in body:
+        return (f"Token Plan（{where}）返回的 401002，意思是这把 key 在该站点不存在或签名校验失败。\n"
+                "  · key 是 LKEAP 的 sk-xxx → 两套体系不通用，base_url 要么换成 "
+                "https://tokenhub.tencentmaas.com/plan/v3 配 Token Plan key，要么换回 LKEAP 端点。\n"
+                "  · 粘贴 Secret 时带了换行/空格，或 key 已被重置，也会是这一条。")
+    return HINTS[401]
+
+
 def chat(messages, tools=None):
     if not KEY:
         raise RuntimeError("OPENAI_API_KEY 为空：检查 GitHub Secrets 里的 LLM_API_KEY 是否已配置、"
@@ -74,7 +94,8 @@ def chat(messages, tools=None):
             return json.load(r)["choices"][0]["message"]
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")[:800]
-        hint = HINTS.get(e.code, "检查 base_url /v1、key、模型名、是否支持 tools")
+        hint = diagnose_401(body, BASE) if e.code == 401 else HINTS.get(
+            e.code, "检查 base_url /v1、key、模型名、是否支持 tools")
         raise RuntimeError(f"HTTP {e.code}（model={MODEL}）→ {hint}\n原始返回：{body}") from e
 
 
