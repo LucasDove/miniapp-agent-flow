@@ -25,7 +25,10 @@ jobs:
           python-version: '3.11'
       - run: pip install -r requirements.txt
       - name: 试探请求形状
+        continue-on-error: true
         run: python scripts/probe_model.py "${{ inputs.model }}" | tee probe.txt
+      - name: 单节点试跑（用真实别名配置跑一次 agent.py）
+        run: python scripts/try_node.py "${{ inputs.model }}" | tee try_node.txt
       - name: 结论贴到 summary
         if: always()
         run: |
@@ -33,6 +36,14 @@ jobs:
             echo '## probe 结果'
             echo ''
             echo '```'
-            cat probe.txt
+            cat probe.txt 2>/dev/null
             echo '```'
+            if [ -f try_node.txt ]; then
+              echo ''
+              echo '## 单节点试跑'
+              echo ''
+              echo '```'
+              cat try_node.txt
+              echo '```'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
